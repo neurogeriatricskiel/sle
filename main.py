@@ -3,7 +3,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sle.data_utils import data_loader
-from sle.data_utils.preprocessing import align_with_gravity, align_with_forward_direction
+from sle.data_utils.preprocessing import (
+    align_with_gravity,
+    align_with_forward_direction,
+)
 from sle.stride_segmentation import HoriStrideSegmentation
 from sle.event_detection import SalarianGaitEventDetection
 from gaitmap.utils.datatype_helper import SensorData
@@ -19,7 +22,11 @@ from gaitmap.trajectory_reconstruction import (
 )
 
 
-SKIP_FILES = ["sub-pp102_task-walkFast_run-off_events.tsv", "sub-pp102_task-walkPreferred_run-off_events.tsv", "sub-pp102_task-walkSlow_run-off_events.tsv"]
+SKIP_FILES = [
+    "sub-pp102_task-walkFast_run-off_events.tsv",
+    "sub-pp102_task-walkPreferred_run-off_events.tsv",
+    "sub-pp102_task-walkSlow_run-off_events.tsv",
+]
 
 
 logger = logging.getLogger(__name__)
@@ -68,7 +75,7 @@ def preprocess_dataset(dataset: SensorData) -> SensorData:
     forward_aligned_data = {
         sensor: align_with_forward_direction(
             dataset=walking_aligned_data[sensor],
-            sampling_frequency_Hz=data_loader.SAMPLING_FREQUENCY_HZ
+            sampling_frequency_Hz=data_loader.SAMPLING_FREQUENCY_HZ,
         )
         for sensor in walking_aligned_data.keys()
     }
@@ -128,7 +135,19 @@ def main() -> None:
     logging.info(f"Project's root path: {data_loader.ROOT_PATH}`.")
 
     demographics_df = data_loader.load_demographics("parkinson_participants.csv")
-    for sub_id in demographics_df["id"].unique():
+    results_dict = {
+        k: []
+        for k in [
+            "sub_id",
+            "task",
+            "run",
+            "side",
+            "stride_id",
+            "stride_length_ref_m",
+            "stride_length_pred_m",
+        ]
+    }
+    for sub_id in demographics_df["sub_id"].unique()[-3:]:
         logging.info(f"{'='*60:s}")
         logging.info(f"Processing data from `{sub_id:s}`.")
         event_files = [
@@ -142,11 +161,18 @@ def main() -> None:
                 continue  # to next event file
             logging.info(f"... Getting IMU data from `{event_file.name:s}`.")
             if "_run-" in event_file.name:
-                run_name = event_file.name[event_file.name.find("_run-")+len("_run-"):-11]
-                task_name = event_file.name[event_file.name.find("_task-")+len("_task-"):event_file.name.find("_run-")]
+                run_name = event_file.name[
+                    event_file.name.find("_run-") + len("_run-") : -11
+                ]
+                task_name = event_file.name[
+                    event_file.name.find("_task-")
+                    + len("_task-") : event_file.name.find("_run-")
+                ]
             else:
                 run_name = "on"
-                task_name = event_file.name[event_file.name.find("_task-")+len("_task-"):-11]
+                task_name = event_file.name[
+                    event_file.name.find("_task-") + len("_task-") : -11
+                ]
 
             imu_dataset = data_loader.load_imu_data(
                 event_file.parent
@@ -172,7 +198,7 @@ def main() -> None:
             marker_dataset = data_loader.load_marker_data(
                 event_file.parent
                 / event_file.name.replace("_events.tsv", "_tracksys-omc_motion.tsv"),
-                tracked_points=["l_heel", "l_ank", "l_toe", "r_heel", "r_ank", "r_toe"]
+                tracked_points=["l_heel", "l_ank", "l_toe", "r_heel", "r_ank", "r_toe"],
             )
 
             # Print to user screen
@@ -180,13 +206,23 @@ def main() -> None:
                 # Extract the side, i.e., left or right
                 side = tracked_point.replace("_ankle", "")
                 if trajectories[tracked_point] is not None:
-                    for s_id, group in trajectories[tracked_point].groupby(level="s_id"):
-                        idx_start = strides[tracked_point].loc[s_id, "start"].astype(int)
+                    for s_id, group in trajectories[tracked_point].groupby(
+                        level="s_id"
+                    ):
+                        idx_start = (
+                            strides[tracked_point].loc[s_id, "start"].astype(int)
+                        )
                         idx_end = strides[tracked_point].loc[s_id, "end"].astype(int)
 
                         # Reference system
-                        dx_ref = marker_dataset[f"{side[:1]}_ank"].loc[idx_end]["pos_x"] - marker_dataset[f"{side[:1]}_ank"].loc[idx_start]["pos_x"]
-                        dy_ref = marker_dataset[f"{side[:1]}_ank"].loc[idx_end]["pos_y"] - marker_dataset[f"{side[:1]}_ank"].loc[idx_start]["pos_y"]
+                        dx_ref = (
+                            marker_dataset[f"{side[:1]}_ank"].loc[idx_end]["pos_x"]
+                            - marker_dataset[f"{side[:1]}_ank"].loc[idx_start]["pos_x"]
+                        )
+                        dy_ref = (
+                            marker_dataset[f"{side[:1]}_ank"].loc[idx_end]["pos_y"]
+                            - marker_dataset[f"{side[:1]}_ank"].loc[idx_start]["pos_y"]
+                        )
                         sl_ref = np.sqrt(dx_ref**2 + dy_ref**2)
 
                         # Proposed algorithm
@@ -194,8 +230,46 @@ def main() -> None:
                         dy = group["pos_y"].iloc[-1] - group["pos_y"].iloc[0]
                         sl = np.sqrt(dx**2 + dy**2)
 
-                        print(f"{sub_id:<8s}{task_name:<16s}{run_name:<8s}{side:<8s}{s_id:>4d}{sl_ref:>8.2f}{sl:>8.2f}")
+                        print(
+                            f"{sub_id:<8s}{task_name:<16s}{run_name:<8s}{side:<8s}{s_id:>4d}{sl_ref:>8.2f}{sl:>8.2f}"
+                        )
+                        for k, val in zip(
+                            results_dict.keys(),
+                            [sub_id, task_name, run_name, side, s_id, sl_ref, sl],
+                        ):
+                            results_dict[k].append(val)
 
+    results_df = pd.DataFrame(results_dict)
+    results_df = pd.merge(
+        results_df,
+        demographics_df[
+            [
+                "sub_id",
+                "gender",
+                "age_years",
+                "height_cm",
+                "weight_kg",
+                "bmi",
+                "foot_length_cm",
+            ]
+        ],
+        how="left",
+        left_on="sub_id",
+        right_on="sub_id",
+    )
+    results_df = results_df[
+        [
+            "sub_id",
+            "gender",
+            "age_years",
+            "height_cm",
+            "weight_kg",
+            "bmi",
+            "foot_length_cm",
+        ]
+        + [c for c in results_df.columns if c not in demographics_df.columns]
+    ]
+    results_df.to_csv("results.csv", sep=",", header=True, index=False)
     return
 
 
