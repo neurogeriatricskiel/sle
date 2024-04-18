@@ -1,9 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import signal
+from scipy.spatial.transform.rotation import Rotation
 import warnings
 import logging
 from gaitmap.utils.datatype_helper import SensorData
 from gaitmap.utils import rotations
+from .data_loader import SAMPLING_FREQUENCY_HZ
 
 
 logger = logging.getLogger(__name__)
@@ -223,3 +226,32 @@ def align_with_gravity(
     # Get rotation
     rotation = rotations.get_gravity_rotation(acc.iloc[:idx].median(axis=0))
     return rotations.rotate_dataset(dataset, rotation)
+
+def align_with_forward_direction(
+    dataset: SensorData,
+    sampling_frequency_Hz: float = SAMPLING_FREQUENCY_HZ,
+    ml_gyr_col_name: str = "gyr_y",
+    min_peak_angular_velocity: float = 50.,
+    min_peak_distance_ms: float = 500.
+) -> SensorData:
+    # Parse minimum peak distance
+    min_peak_distance = int(min_peak_distance_ms / 1000 * sampling_frequency_Hz)
+    
+    # Extract the mediolateral angular velocity signal
+    gyr_ml = dataset[ml_gyr_col_name].to_numpy()
+
+    # Find possible midswings
+    idx_pks_pos, _ = signal.find_peaks(
+        gyr_ml, height=min_peak_angular_velocity, distance=min_peak_distance
+    )
+    idx_pks_neg, _ = signal.find_peaks(
+        -gyr_ml, height=min_peak_angular_velocity, distance=min_peak_distance
+    )
+    if np.mean(np.abs(gyr_ml[idx_pks_pos])) < np.mean(np.abs(gyr_ml[idx_pks_neg])):
+        return dataset
+    else:
+        # Rotate data 180 degrees around vertical axis
+        rotation = Rotation.from_rotvec(
+            rotvec=np.pi * np.array([0., 0., 1.]),
+        )
+        return rotations.rotate_dataset(dataset, rotation)
