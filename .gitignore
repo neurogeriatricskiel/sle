@@ -3,3 +3,4 @@ __pycache__/
 
 *.pyc
 parkinson_participants.csv
+example.log
