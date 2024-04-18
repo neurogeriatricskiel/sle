@@ -3,11 +3,14 @@ from typing_extensions import Self
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import logging
 from joblib import Memory
 from gaitmap._event_detection_common._event_detection_mixin import _EventDetectionMixin
 
 # from gaitmap.base import BaseStrideSegmentation
 from gaitmap.utils.datatype_helper import SensorData
+
+logger = logging.getLogger(__name__)
 
 
 class HoriStrideSegmentation(_EventDetectionMixin):
@@ -25,7 +28,7 @@ class HoriStrideSegmentation(_EventDetectionMixin):
         *,
         sampling_rate_hz: float,
         gait_events: pd.DataFrame,
-        visualize: bool = False
+        visualize: bool = False,
     ) -> Self:
         """Determine the start and end of each stride."""
 
@@ -44,15 +47,23 @@ class HoriStrideSegmentation(_EventDetectionMixin):
             )  # the final contact of the next stride
 
             # Fit a quadratic curve to the signal segment
-            coeffs = np.polyfit(np.arange(idx_ic, idx_fc), gyr_ml[idx_ic:idx_fc], deg=2)
-            p = np.poly1d(coeffs)  # instantiate poly1d object
-            curve = p(np.arange(idx_ic, idx_fc))  # fit a local curve
-            idx_min = np.argmin(curve)  # find the minimum
+            try:
+                coeffs = np.polyfit(
+                    np.arange(idx_ic, idx_fc), gyr_ml[idx_ic:idx_fc], deg=2
+                )
+                p = np.poly1d(coeffs)  # instantiate poly1d object
+                curve = p(np.arange(idx_ic, idx_fc))  # fit a local curve
+                idx_min = np.argmin(curve)  # find the minimum
 
-            # Assign index of local minimum to end of current
-            # and start of next stride
-            idx_end[i] = idx_ic + idx_min
-            idx_start[i + 1] = idx_ic + idx_min
+                # Assign index of local minimum to end of current
+                # and start of next stride
+                idx_end[i] = idx_ic + idx_min
+                idx_start[i + 1] = idx_ic + idx_min
+            except TypeError:
+                logger.info(
+                    f"... ... ... Stance phase of length {idx_fc - idx_ic} samples, from {idx_ic} to {idx_fc}. Continue to next stride."
+                )
+                continue
 
         # Add to a copy of the events dataframe
         self.strides_ = gait_events.copy()
