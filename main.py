@@ -147,7 +147,7 @@ def main() -> None:
             "stride_length_pred_m",
         ]
     }
-    for sub_id in demographics_df["sub_id"].unique()[-3:]:
+    for sub_id in demographics_df["sub_id"].unique():
         logging.info(f"{'='*60:s}")
         logging.info(f"Processing data from `{sub_id:s}`.")
         event_files = [
