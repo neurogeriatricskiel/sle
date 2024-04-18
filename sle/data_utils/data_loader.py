@@ -30,9 +30,15 @@ def load_demographics(file_path: str | pathlib.Path) -> pd.DataFrame:
 
     # Load demographics
     demographics_df = pd.read_csv(file_path, sep=",", header=0)
+
+    # Adjust `id` column
     demographics_df["id"] = demographics_df["id"].apply(
         lambda s: "pp" + ("000" + str(s))[-3:]
     )
+    demographics_df.rename(columns={"id": "sub_id"}, inplace=True)
+
+    # Write out gender
+    demographics_df["gender"] = demographics_df["gender"].map({0: "male", 1: "female"})
     return demographics_df
 
 
