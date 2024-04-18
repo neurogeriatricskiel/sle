@@ -19,7 +19,7 @@ from gaitmap.trajectory_reconstruction import (
 )
 
 
-SKIP_FILES = ["sub-pp102_task-walkPreferred_run-off_events.tsv"]
+SKIP_FILES = ["sub-pp102_task-walkFast_run-off_events.tsv", "sub-pp102_task-walkPreferred_run-off_events.tsv", "sub-pp102_task-walkSlow_run-off_events.tsv"]
 
 
 logger = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ def main() -> None:
     logging.info(f"Project's root path: {data_loader.ROOT_PATH}`.")
 
     demographics_df = data_loader.load_demographics("parkinson_participants.csv")
-    for sub_id in demographics_df["id"].unique()[22:]:
+    for sub_id in demographics_df["id"].unique():
         logging.info(f"{'='*60:s}")
         logging.info(f"Processing data from `{sub_id:s}`.")
         event_files = [
