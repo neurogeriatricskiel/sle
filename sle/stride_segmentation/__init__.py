@@ -1,0 +1,1 @@
+from ._hori_stride_segmentation import HoriStrideSegmentation

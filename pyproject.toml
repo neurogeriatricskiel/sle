@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "sle"
+version = "0.1.0"
+description = ""
+authors = ["Robbin Romijnders <r.j.romijnders@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+gaitmap = "^2.3.0"
+gaitmap-mad = "^2.3.0"
+ngmt = "^0.0.4"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

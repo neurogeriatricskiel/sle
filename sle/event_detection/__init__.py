@@ -1,0 +1,1 @@
+from ._salarian_gait_event_detection import SalarianGaitEventDetection
