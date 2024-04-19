@@ -43,7 +43,7 @@ def preprocess_dataset(dataset: SensorData) -> SensorData:
     logging.info(f"... ... Preprocessing the IMU data.")
 
     # Low-pass filter the sensor data
-    lowpass_filter = ButterworthFilter(order=4, cutoff_freq_hz=5.0)
+    lowpass_filter = ButterworthFilter(order=4, cutoff_freq_hz=15.0)
     filtered_data = {
         s: lowpass_filter.transform(
             data=dataset[s], sampling_rate_hz=data_loader.SAMPLING_FREQUENCY_HZ
@@ -216,12 +216,12 @@ def main() -> None:
 
                         # Reference system
                         dx_ref = (
-                            marker_dataset[f"{side[:1]}_heel"].loc[idx_end]["pos_x"]
-                            - marker_dataset[f"{side[:1]}_heel"].loc[idx_start]["pos_x"]
+                            marker_dataset[f"{side[:1]}_ank"].loc[idx_end]["pos_x"]
+                            - marker_dataset[f"{side[:1]}_ank"].loc[idx_start]["pos_x"]
                         )
                         dy_ref = (
-                            marker_dataset[f"{side[:1]}_heel"].loc[idx_end]["pos_y"]
-                            - marker_dataset[f"{side[:1]}_heel"].loc[idx_start]["pos_y"]
+                            marker_dataset[f"{side[:1]}_ank"].loc[idx_end]["pos_y"]
+                            - marker_dataset[f"{side[:1]}_ank"].loc[idx_start]["pos_y"]
                         )
                         sl_ref = np.sqrt(dx_ref**2 + dy_ref**2)
 
@@ -269,7 +269,7 @@ def main() -> None:
         ]
         + [c for c in results_df.columns if c not in demographics_df.columns]
     ]
-    results_df.to_csv("results_heel_markers.csv", sep=",", header=True, index=False)
+    results_df.to_csv("results_ank_markers_15Hz.csv", sep=",", header=True, index=False)
     return
 
 
