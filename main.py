@@ -216,12 +216,12 @@ def main() -> None:
 
                         # Reference system
                         dx_ref = (
-                            marker_dataset[f"{side[:1]}_ank"].loc[idx_end]["pos_x"]
-                            - marker_dataset[f"{side[:1]}_ank"].loc[idx_start]["pos_x"]
+                            marker_dataset[f"{side[:1]}_heel"].loc[idx_end]["pos_x"]
+                            - marker_dataset[f"{side[:1]}_heel"].loc[idx_start]["pos_x"]
                         )
                         dy_ref = (
-                            marker_dataset[f"{side[:1]}_ank"].loc[idx_end]["pos_y"]
-                            - marker_dataset[f"{side[:1]}_ank"].loc[idx_start]["pos_y"]
+                            marker_dataset[f"{side[:1]}_heel"].loc[idx_end]["pos_y"]
+                            - marker_dataset[f"{side[:1]}_heel"].loc[idx_start]["pos_y"]
                         )
                         sl_ref = np.sqrt(dx_ref**2 + dy_ref**2)
 
@@ -245,6 +245,7 @@ def main() -> None:
         demographics_df[
             [
                 "sub_id",
+                "med_state",
                 "gender",
                 "age_years",
                 "height_cm",
@@ -253,9 +254,8 @@ def main() -> None:
                 "foot_length_cm",
             ]
         ],
-        how="left",
-        left_on="sub_id",
-        right_on="sub_id",
+        left_on=["sub_id", "run"],
+        right_on=["sub_id", "med_state"]
     )
     results_df = results_df[
         [
@@ -269,7 +269,7 @@ def main() -> None:
         ]
         + [c for c in results_df.columns if c not in demographics_df.columns]
     ]
-    results_df.to_csv("results.csv", sep=",", header=True, index=False)
+    results_df.to_csv("results_heel_markers.csv", sep=",", header=True, index=False)
     return
 
 
